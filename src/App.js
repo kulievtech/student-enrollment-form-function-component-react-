@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./index.css";
 import { v4 as uuid } from "uuid";
+import { studentApi } from "./api";
 
 const App = () => {
     const [students, setStudents] = useState([]);
     const [firstNameValue, setFirstNameValue] = useState("");
     const [lastNameValue, setLastNameValue] = useState("");
     const [emailAddressValue, setEmailAddressValue] = useState("");
-    const [classEnrolledValue, setClassEnrolledValue] = useState("Algebra");
+    const [classEnrolledValue, setClassEnrolledValue] = useState("ALGEBRA");
 
     const [firstNameError, setFirstNameError] = useState(false);
     const [lastNameError, setLastNameError] = useState(false);
@@ -18,13 +19,25 @@ const App = () => {
     const [lastNameEditValue, setLastNameEditValue] = useState("");
     const [emailAddressEditValue, setEmailAddressEditValue] = useState("");
     const [classEnrolledEditValue, setClassEnrolledEditValue] =
-        useState("Algebra");
+        useState("ALGEBRA");
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
 
     const [editingStudentId, setEditingStudentId] = useState(null);
     const [deleteStudentId, setDeleteStudentId] = useState(null);
+
+    useEffect(() => {
+        studentApi
+            .getAll()
+            .then((response) => {
+                console.log(response);
+                setStudents(response.data);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    }, []);
 
     const addStudent = (e) => {
         e.preventDefault();
@@ -57,16 +70,23 @@ const App = () => {
             id: uuid(),
             firstName: firstNameValue,
             lastName: lastNameValue,
-            emailAddress: emailAddressValue,
-            classEnrolled: classEnrolledValue
+            email: emailAddressValue,
+            className: classEnrolledValue
         };
 
-        setStudents((prevStudents) => [...prevStudents, newStudent]);
+        studentApi
+            .create(newStudent)
+            .then((response) => {
+                setFirstNameValue("");
+                setLastNameValue("");
+                setEmailAddressValue("");
+                setClassEnrolledValue("");
 
-        setFirstNameValue("");
-        setLastNameValue("");
-        setEmailAddressValue("");
-        setClassEnrolledValue("");
+                setStudents((prevStudents) => [...prevStudents, response.data]);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
     };
 
     const handleFirstNameOnChange = (e) => {
@@ -118,6 +138,8 @@ const App = () => {
     };
 
     const deleteStudent = (studentId) => {
+        studentApi.deleteOne(studentId);
+
         setStudents((prevState) => {
             const keptStudents = prevState.filter(
                 (student) => student.id !== studentId
@@ -141,8 +163,8 @@ const App = () => {
             if (student.id === studentId) {
                 firstName = student.firstName;
                 lastName = student.lastName;
-                emailAddress = student.emailAddress;
-                classEnrolled = student.classEnrolled;
+                emailAddress = student.email;
+                classEnrolled = student.className;
                 break;
             }
         }
@@ -178,9 +200,10 @@ const App = () => {
                         ...student,
                         firstName: firstNameEditValue,
                         lastName: lastNameEditValue,
-                        emailAddress: emailAddressEditValue,
-                        classEnrolled: classEnrolledEditValue
+                        email: emailAddressEditValue,
+                        className: classEnrolledEditValue
                     };
+                    studentApi.updateOne(editingStudentId, copy);
                     return copy;
                 }
                 return student;
@@ -224,10 +247,10 @@ const App = () => {
                         value={classEnrolledValue}
                         required
                     >
-                        <option value="Algebra">Algebra</option>
-                        <option value="Geometry">Geometry</option>
-                        <option value="Journalism">Journalism</option>
-                        <option value="Literature">Literature</option>
+                        <option value="ALGEBRA">Algebra</option>
+                        <option value="GEOMETRY">Geometry</option>
+                        <option value="JOURNALISM">Journalism</option>
+                        <option value="LITERATURE">Literature</option>
                     </select>
                     {classEnrolledError && <span>Invalid Class Name</span>}
 
@@ -246,19 +269,13 @@ const App = () => {
                 </thead>
                 <tbody>
                     {students.map(
-                        ({
-                            firstName,
-                            lastName,
-                            emailAddress,
-                            classEnrolled,
-                            id
-                        }) => {
+                        ({ firstName, lastName, email, className, id }) => {
                             return (
                                 <tr key={id}>
                                     <td>{firstName}</td>
                                     <td>{lastName}</td>
-                                    <td>{emailAddress}</td>
-                                    <td>{classEnrolled}</td>
+                                    <td>{email}</td>
+                                    <td>{className}</td>
                                     <td className="action-buttons">
                                         <button
                                             onClick={() => {
@@ -335,10 +352,10 @@ const App = () => {
                                 value={classEnrolledEditValue}
                                 onChange={handleClassEnrolledEdit}
                             >
-                                <option value="Algebra">Algebra</option>
-                                <option value="Geometry">Geometry</option>
-                                <option value="Journalism">Journalism</option>
-                                <option value="Literature">Literature</option>
+                                <option value="ALGEBRA">Algebra</option>
+                                <option value="GEOMETRY">Geometry</option>
+                                <option value="JOURNALISM">Journalism</option>
+                                <option value="LITERATURE">Literature</option>
                             </select>
                             <div className="edit-buttons"></div>
                             <button
